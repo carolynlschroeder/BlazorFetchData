@@ -1,8 +1,9 @@
 @page "/fetchdata"
 @using Newtonsoft.Json
-@using BlazorDemo.Repositores
 @using BlazorDemo.Models
-@inject WeatherForecastRepository repo
+@using JsonSerializer = System.Text.Json.JsonSerializer
+@using System.Text.Json
+@inject HttpClient HttpClient
 
 <h1>Weather forecast</h1>
 
@@ -39,19 +40,21 @@ else
 
 @code {
     private List<WeatherForecast> forecasts;
+    private string errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
+        using var httpResponse = await HttpClient.GetAsync("/weatherforecast");
 
-            forecasts = await repo.GetForecasts();
-        }
-        catch (Exception ex)
+        if (!httpResponse.IsSuccessStatusCode)
         {
-            var t = ex.Message;
+            errorMessage = httpResponse.ReasonPhrase;
+            Console.WriteLine($"There was an error! {errorMessage}");
+            return;
         }
+
+        forecasts = await httpResponse.Content.ReadFromJsonAsync<List<WeatherForecast>>();
     }
 
-    
+
 }
